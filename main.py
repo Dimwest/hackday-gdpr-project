@@ -1,19 +1,40 @@
 import pyspark
+from pyspark.sql.functions import col, lit
+from configparser import ConfigParser
+from cryptography.fernet import Fernet
+from pathlib import Path
 
-# Script parameters to move to configuration file
-TEST_DIR = './test_data/*'
-MULTILINE = False
-TARGET_UUIDS = ['f8ae431d23c1af07b7010a20b96bbf62', '856d3a356a293db4ace7bf4ba0a90e6f']
-TARGET_FIELDS = ['email', 'country', 'meta.city', 'meta.ipv4']
+
+def get_source_ids(sql_ctx, cfg):
+
+    source_id = cfg['anonymize']['source_id_key']
+    df = sql_ctx.read.json(
+        cfg['anonymize']['source_dir'],
+        multiLine=cfg.getboolean('anonymize', 'multiline')).withColumn('in_source_ids', lit(1)).sample(
+        False, 0.3, seed=0)
+    return df.where(col(source_id).isNotNull()).select(source_id, 'in_source_ids').distinct()
+
 
 if __name__ == '__main__':
+
+    # Read config
+    cfg = ConfigParser()
+    cfg.read(f'{Path(__file__).parent}/config.ini')
 
     # Creating Spark SQLContext
     sc = pyspark.SparkContext()
     sqlContext = pyspark.SQLContext(sc)
 
-    # Reading json data into a dataframe
-    df = sqlContext.read.json(TEST_DIR, multiLine=MULTILINE)
+    source_ids = get_source_ids(sqlContext, cfg)
+    source_ids.show(10)
 
-    df.select('uuid').show(50, truncate=False)
-    df.printSchema()
+    # Reading json data into a dataframe
+    target_events = sqlContext.read.json(cfg['anonymize']['target_dir'], multiLine=cfg.getboolean('anonymize', 'multiline'))
+    join_cond = [source_ids[cfg['anonymize']['source_id_key']]
+                 == target_events[cfg['anonymize']['target_id_key']]]
+    target_events.join(source_ids, join_cond, 'left').select('email', 'in_source_ids').show(1000)
+
+    # Create encryption key
+    key = Fernet.generate_key()
+
+    target_events.printSchema()
