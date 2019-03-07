@@ -1,0 +1,37 @@
+# Created by .ignore support plugin (hsz.mobi)
+# IDE specifics
+.idea/*
+
+### IPythonNotebook template
+# Temporary data
+.ipynb_checkpoints/
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+
+# Distribution / packaging
+env/
+.eggs/
+lib/
+lib64/
+sdist/
+*.egg-info/
+.installed.cfg
+*.7z
+*.dmg
+*.gz
+*.iso
+*.jar
+*.rar
+*.tar
+*.zip
+
+# Virtual env
+venv/
+
+# OS generated files
+.DS_Store
+
+# Test cache
+.cache/
+.pytest_cache/
