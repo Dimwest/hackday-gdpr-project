@@ -1,2 +1,3 @@
-# hackday-gdpr-project
-PySpark job anonymizing events' data
+# jsonymize
+
+PySpark script anonymizing specified events' data while preserving values types.
