@@ -2,8 +2,9 @@
 # IDE specifics
 .idea/*
 
-# Test data
+# Project specifics
 test_data/*
+spark_warehouse/*
 
 ### IPythonNotebook template
 # Temporary data
