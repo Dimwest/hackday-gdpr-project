@@ -1,8 +1,10 @@
 from hashlib import sha256
+from typing import Optional, Union, Dict, List
 import random
 
 
-def anonymize_value(val, encoding):
+def anonymize_value(val: Optional[Union[Dict, List, str, int, bool]],
+                    encoding: str) -> Optional[Union[Dict, List, str, int, bool]]:
 
     """
     Generate an unusable value of the same type as the input value
@@ -40,7 +42,7 @@ def anonymize_value(val, encoding):
 
     # If value is dict, anonymize all of its values
     elif isinstance(val, dict):
-        return {k: anonymize_value(k) for k in val.keys()}
+        return {k: anonymize_value(k, encoding) for k in val.keys()}
 
     elif val is None:
         return None
@@ -49,7 +51,7 @@ def anonymize_value(val, encoding):
         raise TypeError("Incorrect object type: must be one of: str, int, float, list, bool, dict, Nonetype")
 
 
-def anonymize_nested_value(dic, keys, encoding):
+def anonymize_nested_value(dic: Dict, keys: List[str], encoding: str) -> None:
 
     """
     Anonymize specified dictionary key

@@ -2,9 +2,15 @@ import ujson
 from pyspark.sql.types import StringType
 from pyspark.sql.functions import col, lit, when, udf, to_json, from_json
 from src.anonymize import anonymize_nested_value, anonymize_value
+from src.paths import split_path
+from pyspark.sql import DataFrame, SQLContext
+from configparser import ConfigParser
 
 
-def df_join(events_df, user_ids_df, join_type, cfg):
+def df_join(events_df: DataFrame,
+            user_ids_df: DataFrame,
+            join_type: str,
+            cfg: ConfigParser) -> DataFrame:
 
     """
     Helper function handling two Dataframe join cases:
@@ -32,7 +38,7 @@ def df_join(events_df, user_ids_df, join_type, cfg):
     return events_df
 
 
-def get_source_ids(sql_ctx, cfg):
+def get_source_ids(sql_ctx: SQLContext, cfg: ConfigParser) -> DataFrame:
 
     """
     Fetches user IDs from specified JSON file
@@ -46,13 +52,13 @@ def get_source_ids(sql_ctx, cfg):
 
     source_id = cfg['anonymize']['source_id_key']
     df = sql_ctx.read.json(
-        cfg['anonymize']['source_dir'],
+        cfg['anonymize']['source_ids_s3_path'],
         multiLine=cfg.getboolean('anonymize', 'multiline')).withColumn('in_source_ids', lit(1)).sample(
         False, 0.3, seed=0)
     return df.where(col(source_id).isNotNull()).select(source_id, 'in_source_ids').distinct()
 
 
-def anonymize_json(json_str, target_col, encoding):
+def anonymize_json(json_str: str, target_col: str, encoding: str) -> str:
 
     """
     Convert JSON string to Python dict, anonymize target column,
@@ -71,7 +77,7 @@ def anonymize_json(json_str, target_col, encoding):
     return ujson.dumps(nested_json)
 
 
-def anonymize_nested_field(df, col_name, encoding):
+def anonymize_nested_field(df: DataFrame, col_name: str, encoding: str) -> DataFrame:
 
     """
     Update Dataframe nested field in several steps:
@@ -101,7 +107,7 @@ def anonymize_nested_field(df, col_name, encoding):
     return df
 
 
-def anonymize_top_level_field(df, column, encoding):
+def anonymize_top_level_field(df: DataFrame, column: str, encoding: str) -> DataFrame:
 
     """
     Anonymize top-level Dataframe column (e.g. "city" but not "meta.city")
@@ -124,7 +130,7 @@ def anonymize_top_level_field(df, column, encoding):
     return df
 
 
-def anonymize_df(df, cfg):
+def anonymize_df(df: DataFrame, cfg: ConfigParser) -> DataFrame:
 
     """
     Core function anonymizing specified Dataframe columns.
@@ -149,7 +155,17 @@ def anonymize_df(df, cfg):
     return df
 
 
-def show_examples(df, cfg, n=5):
+def write_events(df: DataFrame, cfg: ConfigParser):
+
+    paths = [split_path(i.filename) for i in df.select("filename").distinct().collect()]
+    for p in paths:
+        p[1] = f"{p[1]}__new"
+    paths = ['/'.join(p) for p in paths]
+    print(paths)
+    pass
+
+
+def show_examples(df: DataFrame, cfg: ConfigParser, n: int=5):
 
     """
     Displays non-null rows for each column anonymized.

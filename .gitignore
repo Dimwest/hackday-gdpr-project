@@ -4,7 +4,7 @@
 
 # Project specifics
 test_data/*
-spark_warehouse/*
+spark-warehouse/*
 
 ### IPythonNotebook template
 # Temporary data
@@ -31,7 +31,7 @@ sdist/
 *.zip
 
 # Virtual env
-venv/
+venv/*
 
 # OS generated files
 .DS_Store
